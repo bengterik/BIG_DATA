@@ -7,8 +7,8 @@ import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.functions._
 
 object MyApp {
- def main(args : Array[String]) {
-    println("Hellow Rolwd")
+ def main(args : Array[String]): Unit = {
+   println("Hellow Rolwd")
     
    val conf = new SparkConf().setAppName("My first Spark application")
    val sc = new SparkContext(conf)

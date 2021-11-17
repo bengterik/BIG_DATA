@@ -6,7 +6,7 @@ import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.functions._
 
 object MyApp {
- def main(args : Array[String]) {
+ def main(args : Array[String]): Unit = {
     
     println("Hellow Rolwd")
     Logger.getLogger("org").setLevel(Level.WARN)
@@ -16,8 +16,8 @@ object MyApp {
     val spark = SparkSession.builder().appName("Spark SQL project").config("some option", "value").enableHiveSupport().getOrCreate()
     import spark.implicits._
 
-
     // Loading the file into DF and formatting
+
 
     val fromFile = spark.read.csv("src/main/resources/2008.csv")
     val rowToSkip = fromFile.first
