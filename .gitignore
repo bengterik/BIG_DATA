@@ -3,3 +3,4 @@ src/main/resources/pagecounts-20100806-030000
 target/scala-2.12/classes/pagecounts-20100806-030000
 *.DS_Store
 *.class
+*.vscode
