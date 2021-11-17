@@ -7,18 +7,23 @@ import org.apache.spark.sql.functions._
 
 object MyApp {
  def main(args : Array[String]) {
+    
     println("Hellow Rolwd")
     Logger.getLogger("org").setLevel(Level.WARN)
     
     val conf = new SparkConf().setAppName("My first Spark application")
     val sc = new SparkContext(conf)
-    
-    val count = sc.parallelize(1 to 100).filter { _ =>
-        val x = math.random
-        val y = math.random
-        x*x + y*y < 1
-        }.count()
-    
-    println(s"Number of numbers: $count")
+    val spark = SparkSession.builder().appName("Spark SQL project").config("some option", "value").enableHiveSupport().getOrCreate()
+    import spark.implicits._
+
+
+    // Loading the file into DF and formatting
+
+    val fromFile = spark.read.csv("src/main/resources/2008.csv")
+    val rowToSkip = fromFile.first
+    val headings = fromFile.take(1)(0).toSeq.map(_.toString)
+    val df = fromFile.filter(row => row != rowToSkip).toDF(headings:_*)
+
+    df.show(3)
  }
 }
