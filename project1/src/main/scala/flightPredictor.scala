@@ -24,8 +24,8 @@ object MyApp {
       val rowToSkip = fromFile.first
       val headings = fromFile.take(1)(0).toSeq.map(_.toString)
       
-      val df = fromFile.filter(row => row != rowToSkip).toDF(headings:_*)
-                       .filter(fromFile("Cancelled") < 1)
+      val dfWithCancelled = fromFile.filter(row => row != rowToSkip).toDF(headings:_*)
+      val df = dfWithCancelled.filter(df("Cancelled") < 1)
                        
       val forbiddenColumns = List("ArrTime", "DepTime", "ActualElapsedTime", "AirTime", "TaxiIn", "Diverted", "CarrierDelay", "WeatherDelay", "NASDelay", "SecurityDelay", "LateAircraftDelay")
       val excludedColumns = List("Year", "DayOfMonth", "FlightNum", "TailNum", "DepDelay", "Cancelled", "CancellationCode")
