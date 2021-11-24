@@ -1,4 +1,6 @@
-[0m[[0m[31merror[0m] [0m[0m/Users/alex/git/sparkapp/project1/src/main/scala/flightPredictor.scala:25:44: not found: value row_to_skip[0m
-[0m[[0m[31merror[0m] [0m[0m    val df = fromFile.filter(row => row != row_to_skip).toDF(headings:_*)[0m
-[0m[[0m[31merror[0m] [0m[0m                                           ^[0m
+[0m[[0m[31merror[0m] [0m[0m/Users/alex/git/sparkapp/project1/src/main/scala/flightPredictor.scala:29:2: type mismatch;[0m
+[0m[[0m[31merror[0m] [0m[0m found   : Unit[0m
+[0m[[0m[31merror[0m] [0m[0m required: org.apache.spark.sql.Dataset[org.apache.spark.sql.Row][0m
+[0m[[0m[31merror[0m] [0m[0m }[0m
+[0m[[0m[31merror[0m] [0m[0m ^[0m
 [0m[[0m[31merror[0m] [0m[0mone error found[0m

@@ -7,23 +7,29 @@ import org.apache.spark.sql.functions._
 
 object MyApp {
  def main(args : Array[String]): Unit = {
-    
-    println("Hellow Rolwd")
-    Logger.getLogger("org").setLevel(Level.WARN)
-    
-    val conf = new SparkConf().setAppName("My first Spark application")
-    val sc = new SparkContext(conf)
-    val spark = SparkSession.builder().appName("Spark SQL project").config("some option", "value").enableHiveSupport().getOrCreate()
-    import spark.implicits._
+      Logger.getLogger("org").setLevel(Level.WARN)
+      
+      val df = loadDf()
+      
+      df.show(3)
+ }
 
-    // Loading the file into DF and formatting
+ def loadDf(): org.apache.spark.sql.Dataset[org.apache.spark.sql.Row] = {
+      val conf = new SparkConf().setAppName("My first Spark application")
+      val sc = new SparkContext(conf)
+      val spark = SparkSession.builder().appName("Spark SQL project").config("some option", "value").enableHiveSupport().getOrCreate()
+      import spark.implicits._
+      
+      val fromFile = spark.read.csv("src/main/resources/2008.csv")
+      val rowToSkip = fromFile.first
+      val headings = fromFile.take(1)(0).toSeq.map(_.toString)
+      
+      val df = fromFile.filter(row => row != rowToSkip).toDF(headings:_*)
+                       .filter(fromFile("Cancelled") < 1)
+                       
+      val forbiddenColumns = List("ArrTime", "DepTime", "ActualElapsedTime", "AirTime", "TaxiIn", "Diverted", "CarrierDelay", "WeatherDelay", "NASDelay", "SecurityDelay", "LateAircraftDelay")
+      val excludedColumns = List("Year", "DayOfMonth", "FlightNum", "TailNum", "DepDelay", "Cancelled", "CancellationCode")
 
-
-    val fromFile = spark.read.csv("src/main/resources/2008.csv")
-    val rowToSkip = fromFile.first
-    val headings = fromFile.take(1)(0).toSeq.map(_.toString)
-    val df = fromFile.filter(row => row != rowToSkip).toDF(headings:_*)
-
-    df.show(3)
+      df.drop((forbiddenColumns ++ excludedColumns): _*)
  }
 }
