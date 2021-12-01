@@ -19,7 +19,6 @@ object MyApp {
       Logger.getLogger("org").setLevel(Level.WARN)
       
       val df = loadDf(spark)
-      
       df.show(3)
  }
 }
