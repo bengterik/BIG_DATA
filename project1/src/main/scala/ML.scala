@@ -38,8 +38,8 @@ import org.apache.spark.ml.feature.VectorAssembler
 object ML {
     def mlModel(
     sparkSesh: SparkSession, dataset: Dataset[Row], 
-    target: String, trainingDataPart: Double, 
-    testDataPart: Double): String = {
+    target: String, trainingDataPart: Double, testDataPart: Double): String 
+    = {
         import sparkSesh.implicits._
         
         val features = dataset.columns.filterNot(_== target)

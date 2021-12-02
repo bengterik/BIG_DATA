@@ -25,14 +25,20 @@ object PreProc {
       val tableCountMissingValues = dfWithoutCancelled.select(dfWithoutCancelled.columns.map(c => sum(col(c).isNull.cast("int")).alias(c)): _*)
       //val dfWithoutMissingValues = dfWithoutCancelled.filter(dfWithoutCancelled("ArrDelay") !== null)
       //                                              .filter(dfWithoutCancelled("CRSElapsedTime") !== null)     
-      dfWithoutCancelled.drop((forbiddenColumns ++ excludedColumns ++ badlyTypedColumns): _*)                       
-                        .na.drop //This would be an option to drop all rows with Null Values in any Columns
-                        .withColumn("Month", col("Month").cast("Integer"))
-                        .withColumn("DayOfWeek", col("DayOfWeek").cast("Integer"))
-                        .withColumn("CRSElapsedTime", col("CRSElapsedTime").cast("Integer"))
-                        .withColumn("ArrDelay", col("ArrDelay").cast("Integer"))
-                        .withColumn("Distance", col("Distance").cast("Integer"))
-                        .withColumn("TaxiOut", col("TaxiOut").cast("Integer"))
+      // Missung Values: 288 CRSElapsedTime and 5654 ArrDelay 
+      
+      val dfOnlyWithFeaturesAndTarget=
+          dfWithoutCancelled.drop((forbiddenColumns ++ excludedColumns ++ badlyTypedColumns): _*)                       
+      
+      val dfWithoutMissingValues = dfOnlyWithFeaturesAndTarget.na.drop
+      //dfWithoutMissingValues.select(dfWithoutMissingValues.columns.map(c => sum(col(c).isNull.cast("int")).alias(c)): _*).show 
+                        //.na.fill(0) This could be used to replace the nulls with 0
+      dfWithoutMissingValues.withColumn("Month", dfWithoutMissingValues.col("Month").cast("Integer"))
+                        .withColumn("DayOfWeek", dfWithoutMissingValues.col("DayOfWeek").cast("Integer"))
+                        .withColumn("CRSElapsedTime", dfWithoutMissingValues.col("CRSElapsedTime").cast("Integer"))
+                        .withColumn("ArrDelay", dfWithoutMissingValues.col("ArrDelay").cast("Integer"))
+                        .withColumn("Distance", dfWithoutMissingValues.col("Distance").cast("Integer"))
+                        .withColumn("TaxiOut", dfWithoutMissingValues.col("TaxiOut").cast("Integer"))
                  
 
     //val features = dfWithoutCancelled.columns.filterNot(_== "ArrDelay")

@@ -19,6 +19,7 @@ object MyApp {
       Logger.getLogger("org").setLevel(Level.WARN)
       
       val df = loadDf(spark)
+      //println(df.filter("ArrDelay is null").show)
       println(ML.mlModel(spark, df, "ArrDelay", 0.7, 0.3))
       //df.show(3)
  }
