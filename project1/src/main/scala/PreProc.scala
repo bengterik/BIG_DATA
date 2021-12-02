@@ -20,16 +20,28 @@ object PreProc {
                        
       val forbiddenColumns = List("ArrTime", "DepTime", "ActualElapsedTime", "AirTime", "TaxiIn", "Diverted", "CarrierDelay", "WeatherDelay", "NASDelay", "SecurityDelay", "LateAircraftDelay")
       val excludedColumns = List("Year", "DayOfMonth", "FlightNum", "TailNum", "DepDelay", "Cancelled", "CancellationCode", "UniqueCarrier", "Origin", "Dest")
+      val badlyTypedColumns = List("CRSDepTime", "CRSArrTime")
+      
       val tableCountMissingValues = dfWithoutCancelled.select(dfWithoutCancelled.columns.map(c => sum(col(c).isNull.cast("int")).alias(c)): _*)
-      val features = dfWithoutCancelled.columns.filterNot(_== "ArrDelay")
-      dfWithoutCancelled.drop((forbiddenColumns ++ excludedColumns): _*)
-                .withColumn("CRSDepTime", doubleValues(spark, dfWithoutCancelled, "CRSDepTime"))
-                .withColumn("CRSArrTime", doubleValues(spark, dfWithoutCancelled, "CRSArrTime"))
+      //val dfWithoutMissingValues = dfWithoutCancelled.filter(dfWithoutCancelled("ArrDelay") !== null)
+      //                                              .filter(dfWithoutCancelled("CRSElapsedTime") !== null)     
+      dfWithoutCancelled.drop((forbiddenColumns ++ excludedColumns ++ badlyTypedColumns): _*)                       
+                        .na.drop //This would be an option to drop all rows with Null Values in any Columns
+                        .withColumn("Month", col("Month").cast("Integer"))
+                        .withColumn("DayOfWeek", col("DayOfWeek").cast("Integer"))
+                        .withColumn("CRSElapsedTime", col("CRSElapsedTime").cast("Integer"))
+                        .withColumn("ArrDelay", col("ArrDelay").cast("Integer"))
+                        .withColumn("Distance", col("Distance").cast("Integer"))
+                        .withColumn("TaxiOut", col("TaxiOut").cast("Integer"))
+                 
+
+    //val features = dfWithoutCancelled.columns.filterNot(_== "ArrDelay")
+
     }
 
-    def doubleValues(sparkSesh: SparkSession, dataset: Dataset[Row], column: String): Column = {
+    def doubleValues(sparkSesh: SparkSession, dataset: Dataset[Row], column: String): DataFrame = {
         import sparkSesh.implicits._
-        dataset.select(column).map(row => normalizeTime(row.getString(0))).toDF("value")("value")
+        dataset.select(column).map(row => normalizeTime(row.getString(0))).toDF()
     }
     
     def normalizeTime(sIn: String): Double = {
