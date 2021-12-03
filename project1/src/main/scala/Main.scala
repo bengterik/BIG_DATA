@@ -17,11 +17,17 @@ object MyApp {
       Logger.getLogger("org").setLevel(Level.WARN)
       import spark.implicits._
 
-      val path = "src/main/resources/2008.csv"
+      val path = "../flight_data/2008.csv"
 
+      /*for f <- filesArg
+          create DataFrame from f
+          add to list of dataframes
+     join all dataframes
+     */
+    
       val df = loadDf(spark, path)
       val ml = new ML(spark, df, "ArrDelay")
 
-      println(ml.linearRegression())
+      println(ml.randomForest(0.7,0.3))
  }
 }

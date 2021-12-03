@@ -42,16 +42,17 @@ class ML(sparkSesh: SparkSession,
             .setFeaturesCol("indexedFeatures")
         
         // Chain indexer and forest in a Pipline
-        val pipline = new Pipeline()
+        val pipeline = new Pipeline()
             .setStages(Array(featureIndexer, randomForest))
         
         // train the model
-        val model = pipline.fit(trainingData)
+        val model = pipeline.fit(trainingData)
 
         // make Predicitons
         val predictions = model.transform(testData)
 
         // show Examples
+        println("Features: " + features.mkString(" | "))
         predictions.select("prediction", target, "features").show(3)
 
         val randomForestModel = model.stages(1).asInstanceOf[RandomForestRegressionModel]
@@ -91,6 +92,7 @@ class ML(sparkSesh: SparkSession,
             .setLabelCol(target)
             .setPredictionCol("prediction")
             .setMetricName("rmse") //rmse = root mean squared error
+        
         
         val rmse = evaluator.evaluate(ds)
 
