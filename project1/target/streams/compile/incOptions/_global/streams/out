@@ -19,5 +19,4 @@
 [0m[[0m[0mdebug[0m] [0m[0m	PreProc$.class[0m
 [0m[[0m[0mdebug[0m] [0m[0m	MyApp.class[0m
 [0m[[0m[0mdebug[0m] [0m[0m	ML.class[0m
-[0m[[0m[0mdebug[0m] [0m[0m	ML$.class[0m
 [0m[[0m[0mdebug[0m] [0m[0mRemoving the temporary directory used for backing up class files: /home/bengterik/git/BIG_DATA/project1/target/scala-2.12/classes.bak[0m

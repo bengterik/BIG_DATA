@@ -3,19 +3,19 @@ package flight_predictor
 import org.apache.spark.ml.Pipeline
 import org.apache.spark.ml.evaluation.RegressionEvaluator
 import org.apache.spark.ml.feature.VectorIndexer
-import org.apache.spark.ml.regression.{RandomForestRegressionModel, RandomForestRegressor}
+import org.apache.spark.ml.regression.{RandomForestRegressionModel, RandomForestRegressor, LinearRegression}
 import org.apache.spark.sql.Dataset
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.Row
 import org.apache.spark.ml.feature.VectorAssembler
 
-object ML {
-    def mlModel(sparkSesh: SparkSession, 
-                dataset: Dataset[Row], 
-                target: String, 
-                trainingDataPart: Double, 
-                testDataPart: Double): String = {
-
+class ML(sparkSesh: SparkSession, 
+         dataset: Dataset[Row], 
+         target: String) {
+    
+    def randomForest(
+         trainingDataPart: Double, 
+         testDataPart: Double): String = {
         import sparkSesh.implicits._
         
         val features = dataset.columns.filterNot(_== target)
@@ -54,15 +54,47 @@ object ML {
         // show Examples
         predictions.select("prediction", target, "features").show(3)
 
-        // select (prediction, true target value) and compute the test error.
+        val randomForestModel = model.stages(1).asInstanceOf[RandomForestRegressionModel]
+
+        rmse(predictions)
+    }
+
+    def linearRegression(): Unit = {
+        val features = dataset.columns.filterNot(_== target)
+        val assembler = new VectorAssembler()
+            .setInputCols(features)      
+            .setOutputCol("features")
+        
+        val dfWithFeaturesVec = assembler.transform(dataset).drop(features: _*)
+
+        val lr = new LinearRegression()
+        .setFeaturesCol("features")
+        .setLabelCol("ArrDelay")
+        .setMaxIter(10)
+        .setRegParam(0.3)
+        .setElasticNetParam(0.8)
+
+        // Fit the model
+        val lrModel = lr.fit(dfWithFeaturesVec)
+
+        // Print the coefficients and intercept for linear regression
+        println(s"Coefficients: ${lrModel.coefficients} Intercept: ${lrModel.intercept}")
+
+
+        // Summarize the model over the training set and print out some metrics
+        val summary = lrModel.summary
+        println(s"RMSE: ${summary.rootMeanSquaredError}")
+    }
+
+    def rmse(ds: Dataset[Row]): String = {
         val evaluator = new RegressionEvaluator()
             .setLabelCol(target)
             .setPredictionCol("prediction")
             .setMetricName("rmse") //rmse = root mean squared error
-        val rmse = evaluator.evaluate(predictions)
-
-        val randomForestModel = model.stages(1).asInstanceOf[RandomForestRegressionModel]
         
-        s"Root Mean Squared Error (RMSE) on test data = $rmse" ++ "\n" ++ s"Learned regression forest model:\n ${randomForestModel.toDebugString}"
+        val rmse = evaluator.evaluate(ds)
+
+        s"Root Mean Squared Error (RMSE) on test data = $rmse"
     }
+
 }

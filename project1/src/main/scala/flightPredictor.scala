@@ -20,6 +20,8 @@ object MyApp {
       val path = "src/main/resources/2008.csv"
 
       val df = loadDf(spark, path)
-      println(ML.mlModel(spark, df, "ArrDelay", 0.7, 0.3))
+      val ml = new ML(spark, df, "ArrDelay")
+
+      println(ml.linearRegression())
  }
 }

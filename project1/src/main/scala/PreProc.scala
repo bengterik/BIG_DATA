@@ -18,11 +18,11 @@ object PreProc {
 
     def castColumns(ds: Dataset[Row]): Dataset[Row] = {
         ds.withColumn("Month", ds.col("Month").cast("Integer"))
-        .withColumn("DayOfWeek", ds.col("DayOfWeek").cast("Integer"))
-        .withColumn("CRSElapsedTime", ds.col("CRSElapsedTime").cast("Integer"))
-        .withColumn("ArrDelay", ds.col("ArrDelay").cast("Integer"))
-        .withColumn("Distance", ds.col("Distance").cast("Integer"))
-        .withColumn("TaxiOut", ds.col("TaxiOut").cast("Integer"))
+          .withColumn("DayOfWeek", ds.col("DayOfWeek").cast("Integer"))
+          .withColumn("CRSElapsedTime", ds.col("CRSElapsedTime").cast("Integer"))
+          .withColumn("ArrDelay", ds.col("ArrDelay").cast("Integer"))
+          .withColumn("Distance", ds.col("Distance").cast("Integer"))
+          .withColumn("TaxiOut", ds.col("TaxiOut").cast("Integer"))
     }
 
     def loadFromFile(spark: SparkSession, path: String): Dataset[Row] = {
