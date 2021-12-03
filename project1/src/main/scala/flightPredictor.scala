@@ -14,13 +14,14 @@ object MyApp {
       val conf = new SparkConf().setAppName("My first Spark application")
       val sc = new SparkContext(conf)
       val spark = SparkSession.builder().appName("Spark SQL project").config("some option", "value").enableHiveSupport().getOrCreate()
+      Logger.getLogger("org").setLevel(Level.WARN)
       import spark.implicits._
 
-      Logger.getLogger("org").setLevel(Level.WARN)
-      
-      val df = loadDf(spark)
+      val path = "src/main/resources/2008.csv"
+
+      val df = loadDf(spark, path)
       //println(df.filter("ArrDelay is null").show)
-      println(ML.mlModel(spark, df, "ArrDelay", 0.7, 0.3))
-      //df.show(3)
+      //println(ML.mlModel(spark, df, "ArrDelay", 0.7, 0.3))
+      df.show(3)
  }
 }
