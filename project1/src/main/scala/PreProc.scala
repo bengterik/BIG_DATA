@@ -11,16 +11,18 @@ import org.apache.spark.sql._
 
 object PreProc {
     def loadDf(spark: SparkSession, path: String): Dataset[Row] = {
-      val df = removeUnwantedColumns(loadFromFile(spark, path))
+      val df = loadFromFile(spark, path)
                 
-      df.withColumn("Month", df.col("Month").cast("Integer"))
-        .withColumn("DayOfWeek", df.col("DayOfWeek").cast("Integer"))
-        .withColumn("CRSElapsedTime", df.col("CRSElapsedTime").cast("Integer"))
-        .withColumn("ArrDelay", df.col("ArrDelay").cast("Integer"))
-        .withColumn("Distance", df.col("Distance").cast("Integer"))
-        .withColumn("TaxiOut", df.col("TaxiOut").cast("Integer"))
-                 
+      removeUnwantedColumns(castColumns(df))              
+    }
 
+    def castColumns(ds: Dataset[Row]): Dataset[Row] = {
+        ds.withColumn("Month", ds.col("Month").cast("Integer"))
+        .withColumn("DayOfWeek", ds.col("DayOfWeek").cast("Integer"))
+        .withColumn("CRSElapsedTime", ds.col("CRSElapsedTime").cast("Integer"))
+        .withColumn("ArrDelay", ds.col("ArrDelay").cast("Integer"))
+        .withColumn("Distance", ds.col("Distance").cast("Integer"))
+        .withColumn("TaxiOut", ds.col("TaxiOut").cast("Integer"))
     }
 
     def loadFromFile(spark: SparkSession, path: String): Dataset[Row] = {
@@ -45,7 +47,6 @@ object PreProc {
     }
     
     def normalizeTime(sIn: String): Double = {
-        // prepending to have consistent size)
         val s = "0" * (4 - sIn.length) + sIn
         
         val s1 = s.substring(0,2)
@@ -57,13 +58,3 @@ object PreProc {
         (i1*60 + i2)/(24*60).toDouble
     }
 }
-
-/*
-val tableCountMissingValues = dfWithoutCancelled.select(dfWithoutCancelled.columns.map(c => sum(col(c).isNull.cast("int")).alias(c)): _*)
-      //val dfWithoutMissingValues = dfWithoutCancelled.filter(dfWithoutCancelled("ArrDelay") !== null)
-      //                                              .filter(dfWithoutCancelled("CRSElapsedTime") !== null)     
-      // Missung Values: 288 CRSElapsedTime and 5654 ArrDelay 
-      
-      //dfWithoutMissingValues.select(dfWithoutMissingValues.columns.map(c => sum(col(c).isNull.cast("int")).alias(c)): _*).show 
-                        //.na.fill(0) This could be used to replace the nulls with 0
-*/
