@@ -7,12 +7,23 @@ import org.apache.log4j.{Level, Logger}
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.functions._
 import org.apache.spark.ml.feature.VectorAssembler
+import scala.collection.mutable.ListBuffer
 import org.apache.spark.sql._
 
-object PreProc {
-    def loadDf(spark: SparkSession, path: String): Dataset[Row] = {
+object PreProcess {
+    def loadMultipleDFs(spark: SparkSession, args: Array[String]): DataFrame = {
+        val path = args(0)
+
+        var dataframes: ListBuffer[DataFrame] = ListBuffer()
+        for (i <- 1 until args.size) {
+            dataframes = dataframes :+ loadDF(spark, path ++ args(i) ++ ".csv")
+        }
+
+        dataframes.reduce(_.union(_))
+    }
+
+    def loadDF(spark: SparkSession, path: String): Dataset[Row] = {
       val df = loadFromFile(spark, path)
-                
       removeUnwantedColumns(formatColumns(df))           
     }
 
@@ -31,12 +42,14 @@ object PreProc {
         val fromFile = spark.read.csv(path)
         val headings = fromFile.take(1)(0).toSeq.map(_.toString)
         val rowToSkip = fromFile.first
+        
         fromFile.filter(row => row != rowToSkip).toDF(headings:_*)
     }
 
     def removeUnwantedColumns(ds: Dataset[Row]): Dataset[Row] = {
         val forbiddenColumns = List("ArrTime", "DepTime", "ActualElapsedTime", "AirTime", "TaxiIn", "Diverted", "CarrierDelay", "WeatherDelay", "NASDelay", "SecurityDelay", "LateAircraftDelay")
-        val excludedColumns = List("Year", "DayOfMonth", "FlightNum", "CRSArrTime", "Cancelled", "TailNum", "DepDelay", "Cancelled", "CancellationCode", "UniqueCarrier", "Origin", "Dest")
+        val excludedColumns = List("Year", "DayOfMonth", "FlightNum", "CRSArrTime", "Cancelled", "TailNum", "DepDelay", "Cancelled", "CancellationCode", "Origin", "Dest")
+        
         ds.filter(ds("Cancelled") < 1)
           .drop((forbiddenColumns ++ excludedColumns): _*)
           .na.drop

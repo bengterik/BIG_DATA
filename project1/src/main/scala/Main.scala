@@ -7,27 +7,23 @@ import org.apache.log4j.{Level, Logger}
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.functions._
 import org.apache.spark.ml.feature.VectorAssembler
-import PreProc._
+import scala.collection.mutable.ListBuffer
+import org.apache.spark.sql.DataFrame
+import PreProcess._
 
 object MyApp {
  def main(args : Array[String]): Unit = {
-      val conf = new SparkConf().setAppName("My first Spark application")
-      val sc = new SparkContext(conf)
-      val spark = SparkSession.builder().appName("Spark SQL project").config("some option", "value").enableHiveSupport().getOrCreate()
-      Logger.getLogger("org").setLevel(Level.WARN)
-      import spark.implicits._
-
-      val path = "../flight_data/2008.csv"
-
-      /*for f <- filesArg
-          create DataFrame from f
-          add to list of dataframes
-     join all dataframes
-     */
+    val conf = new SparkConf().setAppName("My first Spark application")
+    val sc = new SparkContext(conf)
+    val spark = SparkSession.builder().appName("Spark SQL project").config("some option", "value").enableHiveSupport().getOrCreate()
     
-      val df = loadDf(spark, path)
-      val ml = new ML(spark, df, "ArrDelay")
+    Logger.getLogger("org").setLevel(Level.WARN)
+    import spark.implicits._
 
-      println(ml.randomForest(0.7,0.3))
+    val df = loadMultipleDFs(spark, args)
+    val categoricalVariables = List("UniqueCarrier")
+
+    new ML(spark, df, "ArrDelay", categoricalVariables).randomForest(0.8, 0.2)
  }
 }
+

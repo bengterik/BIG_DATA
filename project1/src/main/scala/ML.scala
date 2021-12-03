@@ -8,29 +8,47 @@ import org.apache.spark.sql.Dataset
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.Row
 import org.apache.spark.ml.feature.VectorAssembler
+import org.apache.spark.ml.feature.StringIndexer
+import org.apache.spark.ml.linalg.{Matrix, Vectors}
+import org.apache.spark.ml.stat.Correlation
+import org.apache.spark.sql.Row
 
-class ML(sparkSesh: SparkSession, 
+case class ML(sparkSesh: SparkSession, 
          dataset: Dataset[Row], 
-         target: String) {
+         target: String,
+         categoricalVariables: List[String]) {
     
     def randomForest(
          trainingDataPart: Double, 
          testDataPart: Double): String = {
         import sparkSesh.implicits._
         
-        val features = dataset.columns.filterNot(_== target)
+        val features = dataset.columns.filterNot(col => col == target || categoricalVariables.contains(col))
+        
+        var indexDataset = dataset
+
+        for (category <- categoricalVariables) {
+            indexDataset =
+                new StringIndexer()
+                    .setInputCol(category)
+                    .setOutputCol("indexed" + category)
+                    .fit(indexDataset).transform(dataset)
+        }
+        
+        val indexedDF = indexDataset
 
         val assembler = new VectorAssembler()
-            .setInputCols(features)      
+            .setInputCols(features ++ categoricalVariables.map("indexed" ++ _))      
             .setOutputCol("features")
 
-        val dfWithFeaturesVec = assembler.transform(dataset)
+        val dfWithFeaturesVec = assembler.transform(indexedDF)
 
         val featureIndexer = new VectorIndexer()
             .setInputCol("features")
             .setOutputCol("indexedFeatures")
-            .setMaxCategories(4)
+            .setMaxCategories(21)
             .fit(dfWithFeaturesVec)
+
 
         // split the data 
         val Array(trainingData, testData) = 
@@ -97,6 +115,32 @@ class ML(sparkSesh: SparkSession,
         val rmse = evaluator.evaluate(ds)
 
         s"Root Mean Squared Error (RMSE) on test data = $rmse"
+    }
+
+    def correlationMatrix(): Dataset[Row] = {
+        import sparkSesh.implicits._
+        
+        val features = dataset.columns.filterNot(col => col == target || categoricalVariables.contains(col))
+        
+        var indexDataset = dataset
+
+        for (category <- categoricalVariables) {
+            indexDataset =
+                new StringIndexer()
+                    .setInputCol(category)
+                    .setOutputCol("indexed" + category)
+                    .fit(indexDataset).transform(dataset)
+        }
+        
+        val indexedDF = indexDataset
+
+        val assembler = new VectorAssembler()
+            .setInputCols(features ++ categoricalVariables.map("indexed" ++ _))      
+            .setOutputCol("features")
+
+        val dfWithFeaturesVec = assembler.transform(indexedDF)
+        
+        Correlation.corr(dfWithFeaturesVec, "features")
     }
 
 }
