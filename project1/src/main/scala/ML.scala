@@ -24,24 +24,8 @@ case class ML(sparkSesh: SparkSession,
         import sparkSesh.implicits._
         
         val features = dataset.columns.filterNot(col => col == target || categoricalVariables.contains(col))
-        
-        var indexDataset = dataset
 
-        for (category <- categoricalVariables) {
-            indexDataset =
-                new StringIndexer()
-                    .setInputCol(category)
-                    .setOutputCol("indexed" + category)
-                    .fit(indexDataset).transform(dataset)
-        }
-        
-        val indexedDF = indexDataset
-
-        val assembler = new VectorAssembler()
-            .setInputCols(features ++ categoricalVariables.map("indexed" ++ _))      
-            .setOutputCol("features")
-
-        val dfWithFeaturesVec = assembler.transform(indexedDF)
+        val dfWithFeaturesVec = withFeaturesVector()
 
         val featureIndexer = new VectorIndexer()
             .setInputCol("features")
@@ -105,21 +89,7 @@ case class ML(sparkSesh: SparkSession,
         println(s"RMSE: ${summary.rootMeanSquaredError}")
     }
 
-    def rmse(ds: Dataset[Row]): String = {
-        val evaluator = new RegressionEvaluator()
-            .setLabelCol(target)
-            .setPredictionCol("prediction")
-            .setMetricName("rmse") //rmse = root mean squared error
-        
-        
-        val rmse = evaluator.evaluate(ds)
-
-        s"Root Mean Squared Error (RMSE) on test data = $rmse"
-    }
-
-    def correlationMatrix(): Dataset[Row] = {
-        import sparkSesh.implicits._
-        
+    def withFeaturesVector(): Dataset[Row] = {
         val features = dataset.columns.filterNot(col => col == target || categoricalVariables.contains(col))
         
         var indexDataset = dataset
@@ -138,7 +108,23 @@ case class ML(sparkSesh: SparkSession,
             .setInputCols(features ++ categoricalVariables.map("indexed" ++ _))      
             .setOutputCol("features")
 
-        val dfWithFeaturesVec = assembler.transform(indexedDF)
+        assembler.transform(indexedDF)
+    }
+
+    def rmse(ds: Dataset[Row]): String = {
+        val evaluator = new RegressionEvaluator()
+            .setLabelCol(target)
+            .setPredictionCol("prediction")
+            .setMetricName("rmse") //rmse = root mean squared error
+        
+        
+        val rmse = evaluator.evaluate(ds)
+
+        s"Root Mean Squared Error (RMSE) on test data = $rmse"
+    }
+
+    def correlationMatrix(): Dataset[Row] = {
+        val dfWithFeaturesVec = withFeaturesVector()
         
         Correlation.corr(dfWithFeaturesVec, "features")
     }
