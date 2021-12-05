@@ -157,5 +157,4 @@ case class ML(spark: SparkSession,
 
         cm.write.json(path ++ name ++ ".json")
     }
-
 }

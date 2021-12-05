@@ -23,7 +23,7 @@ object MyApp {
     val df = loadDF(spark, args)
     val categoricalVariables = List("UniqueCarrier")
 
-    new ML(spark, df, "ArrDelay", categoricalVariables).randomForest(0.8, 0.2)
+    println(ML(spark, df, "ArrDelay", categoricalVariables).randomForest(0.8, 0.2))
  }
 }
 
