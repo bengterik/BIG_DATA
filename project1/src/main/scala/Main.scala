@@ -20,7 +20,7 @@ object MyApp {
     Logger.getLogger("org").setLevel(Level.WARN)
     import spark.implicits._
 
-    val df = loadMultipleDFs(spark, args)
+    val df = loadDF(spark, args)
     val categoricalVariables = List("UniqueCarrier")
 
     new ML(spark, df, "ArrDelay", categoricalVariables).randomForest(0.8, 0.2)

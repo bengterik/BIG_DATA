@@ -7,6 +7,7 @@ target/scala-2.12/classes/pagecounts-20100806-030000
 *.csv
 *.out
 *.jar
+*.json
 
 # bloop and metals
 .bloop

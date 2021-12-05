@@ -13,15 +13,29 @@ import org.apache.spark.ml.linalg.{Matrix, Vectors}
 import org.apache.spark.ml.stat.Correlation
 import org.apache.spark.sql.Row
 
-case class ML(sparkSesh: SparkSession, 
+/** A class wrapping the dataset, target and any categorical values.
+ *
+ *  @constructor sets up for model application
+ *  @param spark current spark session
+ *  @param dataset (dataset with unused columns removed) that the models/functions can be applied to 
+ *  @param target target variable for the model
+ *  @param categoricalVariables categorical variables from the model which will need indexation
+ */
+case class ML(spark: SparkSession, 
          dataset: Dataset[Row], 
          target: String,
          categoricalVariables: List[String]) {
     
+    /** Regression using the random forest method on the dataset provided
+      *
+      * @param trainingDataPart share of data used for training the model
+      * @param testDataPart share of data used for testing the model
+      * @return RMSE of the model
+      */
     def randomForest(
          trainingDataPart: Double, 
          testDataPart: Double): String = {
-        import sparkSesh.implicits._
+        import spark.implicits._
         
         val features = dataset.columns.filterNot(col => col == target || categoricalVariables.contains(col))
 
@@ -33,27 +47,20 @@ case class ML(sparkSesh: SparkSession,
             .setMaxCategories(21)
             .fit(dfWithFeaturesVec)
 
-
-        // split the data 
         val Array(trainingData, testData) = 
             dfWithFeaturesVec.randomSplit(Array(trainingDataPart,testDataPart))
         
-        // train a RandomForest Model
         val randomForest = new RandomForestRegressor()
             .setLabelCol(target)
             .setFeaturesCol("indexedFeatures")
         
-        // Chain indexer and forest in a Pipline
         val pipeline = new Pipeline()
             .setStages(Array(featureIndexer, randomForest))
         
-        // train the model
         val model = pipeline.fit(trainingData)
 
-        // make Predicitons
         val predictions = model.transform(testData)
 
-        // show Examples
         println("Features: " + features.mkString(" | "))
         predictions.select("prediction", target, "features").show(3)
 
@@ -61,7 +68,13 @@ case class ML(sparkSesh: SparkSession,
 
         rmse(predictions)
     }
-
+    
+    /** Regression using the linear regression model on the dataset provided.
+      *
+      * @param trainingDataPart share of data used for training the model
+      * @param testDataPart share of data used for testing the model
+      * @return RMSE of the model
+      */
     def linearRegression(): Unit = {
         val features = dataset.columns.filterNot(_== target)
         val assembler = new VectorAssembler()
@@ -89,6 +102,10 @@ case class ML(sparkSesh: SparkSession,
         println(s"RMSE: ${summary.rootMeanSquaredError}")
     }
 
+    /** Method to index categorical variables and assemble all features into a feature vector
+    *
+      * @return Dataset with feature vector
+      */
     def withFeaturesVector(): Dataset[Row] = {
         val features = dataset.columns.filterNot(col => col == target || categoricalVariables.contains(col))
         
@@ -111,22 +128,34 @@ case class ML(sparkSesh: SparkSession,
         assembler.transform(indexedDF)
     }
 
+    /** Returns the root mean square error between "target" and "prediction" column.
+      *
+      * @param ds dataset
+      * @return String showing the RMSE error
+      */
     def rmse(ds: Dataset[Row]): String = {
         val evaluator = new RegressionEvaluator()
             .setLabelCol(target)
             .setPredictionCol("prediction")
             .setMetricName("rmse") //rmse = root mean squared error
         
-        
         val rmse = evaluator.evaluate(ds)
 
         s"Root Mean Squared Error (RMSE) on test data = $rmse"
     }
 
-    def correlationMatrix(): Dataset[Row] = {
-        val dfWithFeaturesVec = withFeaturesVector()
+    /** Regression using the Random Forest Regressor on the dataset provided
+      *
+      * @param path sets directory to place JSON file
+      * @param name sets name of file
+      * @return Writes the matrix in JSON-format to a file specified in path
+      */
+    def correlationMatrix(path: String, name: String): Unit = {
+        val df = withFeaturesVector()
         
-        Correlation.corr(dfWithFeaturesVec, "features")
+        val cm = Correlation.corr(df, "features")
+
+        cm.write.json(path ++ name ++ ".json")
     }
 
 }
