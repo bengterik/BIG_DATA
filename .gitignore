@@ -54,3 +54,4 @@ bin/
 
 #general
 *.class
+.Rproj.user
