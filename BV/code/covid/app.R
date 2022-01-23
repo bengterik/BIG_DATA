@@ -28,29 +28,40 @@
 #   finally = install.packages("rworldmap")
 # )
 source("helpers.R")
+library(highcharter)
+library(ggplot2)
+library(magrittr)
+library(leaflet)
 library(shiny)
-
-# library(maps)
-# library(mapproj)
+library(jsonlite)
+library(maps)
+library(mapproj)
 library(leaflet.providers)
-data <- read.csv("Data/deaths_covid.csv")
+
+library(treemap)
+
+data(GNI2014, package = "treemap")
+
+data <- read.csv("deaths_covid.csv")
 all_columns <- colnames(data, do.NULL = TRUE, prefix = "col")
 columns_wanted <- c("iso_code", "continent", "location", "date",
                    "total_cases_per_million", "total_deaths_per_million", 
                    "reproduction_rate", "total_boosters_per_hundred", 
                    "aged_65_older")
+
 data_wanted <- data[columns_wanted]
 # get the dates as a column to return the first and last day
-dates <- as.Date(data_test_wanted_columns$date)
+dates <- as.Date(data_wanted$date)
 first_day <- min(dates)
 last_day <- max(dates)
 chosen_day <- first_day
+
 #continents <- dplyr::distinct(data_wanted, continent)[!apply(is.na(dplyr::distinct(data_wanted, continent)) | dplyr::distinct(data_wanted, continent) == "", 1, all),]
 
 
 
 # Define UI for application that draws a histogram
-ui <- fluidPage(
+ui <- shinyUI(fluidPage(
    
    # Application title
    titlePanel("Covid Data"),
@@ -68,11 +79,11 @@ ui <- fluidPage(
          fluidRow(
            column(10,
                   selectInput("chosen_variable", h3("Desired variable:"),
-                              choices = list("total_cases_per_million" = 1,
-                                             "total_deaths_per_million" = 2,
-                                             "reproduction_rate" = 3,
-                                             "total_boosters_per_hundred" = 4, 
-                                             "aged_65_older" = 5)), selected = 1)),
+                              choices = c("total_cases_per_million",
+                                             "total_deaths_per_million",
+                                             "reproduction_rate",
+                                             "total_boosters_per_hundred", 
+                                             "aged_65_older")), selected = "total_deaths_per_million")),
         fluidRow(
           column(10,
                  selectInput("chosen_continent", h3("Choose the continent:"),
@@ -84,40 +95,32 @@ ui <- fluidPage(
                                             "Oceania" = 6,
                                             "The whole world" = 7)), selected = 7))),
         mainPanel(
-          plotOutput(outputId = "map")
-        )
+          highchartOutput("myMap") 
+          )
       )
+  )
 )
-     
+
+url <- "https://code.highcharts.com/mapdata/custom/world-robinson-lowres.js"
 
 
 # Define server logic required to draw a histogram
 server <- function(input, output) {
-  output$map <- renderPlot({
-    data <- switch(input$chosen_variable, 
-                   "total_cases_per_million" = data_wanted$total_cases_per_million,
-                   "total_deaths_per_million" = data_wanted$total_deaths_per_million,
-                   "reproduction_rate" = data_wanted$reproduction_rate,
-                   "total_boosters_per_hundred" = data_wanted$total_boosters_per_hundred, 
-                   "aged_65_older" = data_wanted$aged_65_older)
-    
-    color <- switch(input$chosen_variable, 
-                    "total_cases_per_million" = "darkorange4",
-                    "total_deaths_per_million" = "darkred",
-                    "reproduction_rate" = "dodgerblue4",
-                    "total_boosters_per_hundred" = "forestgreen", 
-                    "aged_65_older" = "antiquewhite4")
-    
-    legend <- switch(input$var, 
-                     "total_cases_per_million" = "total cases per million",
-                     "total_deaths_per_million" = "total deaths per million",
-                     "reproduction_rate" = "reproduction rate",
-                     "total_boosters_per_hundred" = "total boosters per hundred", 
-                     "aged_65_older" = "aged 65 older")
-    
-    percent_map(data, color, legend, input$date)
-  })
-}
+  output$myMap <- renderHighchart({
+    hcmap(
+         "custom/africa", 
+         data = data_wanted[data_wanted$date == input$date,],
+         name = "Gross national income per capita", 
+         value = input$chosen_variable,
+         borderWidth = 0,
+         nullColor = "#d3d3d3",
+         joinBy = c("iso-a3", "iso_code")
+     ) %>%
+      hc_colorAxis(
+        stops = color_stops(colors = viridisLite::inferno(10, begin = 0.1)),
+        type = "logarithmic"
+      )
+})}
 
 # Run the application 
 shinyApp(ui = ui, server = server)
