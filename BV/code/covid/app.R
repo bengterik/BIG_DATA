@@ -65,14 +65,15 @@ chosen_day <- first_day
 
 
 # Define UI for application that draws a histogram
-ui <- shinyUI(fluidPage(
+ui <- shinyUI(
+  fluidPage(
    
    # Application title
    titlePanel("Covid Data"),
    
    # Sidebar with a slider input for the choosen date
    
-   sidebarLayout(
+    fluidRow(
       sidebarPanel(
         fluidRow(
           column(10,sliderInput("date",
@@ -102,9 +103,23 @@ ui <- shinyUI(fluidPage(
         mainPanel(
           highchartOutput("myMap") 
           )
-      )
+      ),
+   fluidRow(
+     sidebarLayout(
+       
+       sidebarPanel(
+         sliderInput(
+           "bins", label = "Number of bins:",
+           min = 1, value = 30, max = 50
+         )
+       ),
+       
+       mainPanel(
+         plotOutput("distPlot")
+       )
+     )
   )
-)
+))
 
 # Maps https://code.highcharts.com/mapdata/
 options(highcharter.download_map_data = FALSE)
@@ -114,11 +129,11 @@ server <- function(input, output) {
   output$myMap <- renderHighchart({
     
     color_scale <- switch(input$chosen_variable,
-                   "total_cases_per_million" =  c("#ffffff", "#520000"),
-                   "total_deaths_per_million" = c("#ffffff", "#520000"),
-                   "reproduction_rate" = c("#ffffff", "#61004f"),
-                   "total_boosters_per_hundred" = c("#ffffff", "#005208"), 
-                   "aged_65_older" = c("#ffffff", "#003752"))
+                   "total_cases_per_million" =  c("#d3d3d3", "#520000"),
+                   "total_deaths_per_million" = c("#d3d3d3", "#520000"),
+                   "reproduction_rate" = c("#d3d3d3", "#61004f"),
+                   "total_boosters_per_hundred" = c("#d3d3d3", "#005208"), 
+                   "aged_65_older" = c("#d3d3d3", "#003752"))
     
     hcmap(
          input$chosen_continent, 
@@ -133,7 +148,18 @@ server <- function(input, output) {
         stops = color_stops(n = 10, colors = color_scale),
         type = "logarithmic"
       )
-})}
+  })
+  
+  output$distPlot <- renderPlot({
+    # generate bins based on input$bins from ui.R
+    x    <- faithful[, 2]
+    bins <- seq(min(x), max(x), length.out = input$bins + 1)
+    
+    # draw the histogram with the specified number of bins
+    hist(x, breaks = bins, col = 'darkgray', border = 'white')
+  })
+  
+}
 
 #color_stops(colors = viridisLite::inferno(10, begin = 0.1))
 # Run the application 
