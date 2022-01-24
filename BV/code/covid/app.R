@@ -45,9 +45,11 @@ data <- read.csv("deaths_covid.csv")
 View(head(data,10))
 all_columns <- colnames(data, do.NULL = TRUE, prefix = "col")
 columns_wanted <- c("iso_code", "continent", "location", "date",
-                   "total_cases_per_million", "total_deaths_per_million", 
-                   "reproduction_rate", "total_boosters_per_hundred", 
-                   "aged_65_older")
+                    "total_cases_per_million","total_deaths_per_million",
+                    "new_cases_smoothed_per_million", "new_deaths_smoothed_per_million", 
+                    "weekly_icu_admissions_per_million", "weekly_hosp_admissions_per_million",
+                    "reproduction_rate", "people_fully_vaccinated_per_hundred", "total_boosters_per_hundred", 
+                    "aged_65_older", "population","population_density")
 
 data_wanted <- data[columns_wanted]
 #data_wanted[is.na(data_wanted)] <- 0
@@ -71,7 +73,7 @@ ui <- shinyUI(
    # Application title
    titlePanel("Covid Data"),
    
-   # Sidebar with a slider input for the choosen date
+   # Sidebar with a slider input for the chosen date
    
     fluidRow(
       sidebarPanel(
@@ -84,11 +86,16 @@ ui <- shinyUI(
          fluidRow(
            column(10,
                   selectInput("chosen_variable", h3("Desired variable:"),
-                              choices = list("total cases per million" = "total_cases_per_million" ,
-                                             "total deaths per million" = "total_deaths_per_million" ,
-                                             "reproduction rate" = "reproduction_rate" ,
-                                              "total boosters per hundred" = "total_boosters_per_hundred" , 
-                                              "aged 65 older" = "aged_65_older")), selected = "total_deaths_per_million")),
+                              choices = list("Total Cases Per Million" = "total_cases_per_million" ,
+                                             "Total Deaths Per Million" = "total_deaths_per_million" ,
+                                             "New Cases Smoothed Per Million" = "new_cases_smoothed_per_million" ,
+                                             "New Deaths Smoothed Per Million" = "new_deaths_smoothed_per_million" ,
+                                             "Reproduction Rate" = "reproduction_rate" ,
+                                             "Weekly ICU Admissions Per Million" = "weekly_icu_admissions_per_million" ,
+                                             "Weekly Hosp Admissions Per Millionn" = "weekly_hosp_admissions_per_million" ,
+                                             "People Fully Vaccinated Per Hunderd" = "people_fully_vaccinated_per_hundred" ,
+                                             "Total Boosters Per Hundred" = "total_boosters_per_hundred" , 
+                                             "Aged 65 And Older" = "aged_65_older")), selected = "New Cases Smoothed Per Million")),
         fluidRow(
           column(10,
                  selectInput("chosen_continent", h3("Choose the continent:"),
@@ -98,8 +105,8 @@ ui <- shinyUI(
                                             "North America" = "custom/north-america",
                                             "South America" = "custom/south-america",
                                             "Oceania" = "custom/oceania",
-                                            "The whole world" = "custom/world-robinson-lowres")), 
-                 selected = "The whole world"))),
+                                            "The Whole World" = "custom/world-robinson-lowres")), 
+                 selected = "The Whole World"))),
         mainPanel(
           highchartOutput("myMap") 
           )
@@ -122,23 +129,39 @@ ui <- shinyUI(
 ))
 
 # Maps https://code.highcharts.com/mapdata/
-options(highcharter.download_map_data = FALSE)
+options(highcharter.download_map_data = TRUE)
 
 # Define server logic required to draw a histogram
 server <- function(input, output) {
   output$myMap <- renderHighchart({
     
     color_scale <- switch(input$chosen_variable,
-                   "total_cases_per_million" =  c("#d3d3d3", "#520000"),
-                   "total_deaths_per_million" = c("#d3d3d3", "#520000"),
-                   "reproduction_rate" = c("#d3d3d3", "#61004f"),
-                   "total_boosters_per_hundred" = c("#d3d3d3", "#005208"), 
-                   "aged_65_older" = c("#d3d3d3", "#003752"))
+                   "total_cases_per_million" =  c("#ffffff", "#520000"),
+                   "total_deaths_per_million" = c("#ffffff", "#520000"),
+                   "new_cases_smoothed_per_million" =  c("#ffffff", "#520000"),
+                   "new_deaths_smoothed_per_million" =  c("#ffffff", "#520000"),
+                   "weekly_icu_admissions_per_million" =  c("#ffffff", "#520000"),
+                   "weekly_hosp_admissions_per_million" =  c("#ffffff", "#520000"),
+                   "reproduction_rate" = c("#ffffff", "#61004f"),
+                   "people_fully_vaccinated_per_hundred" = c("#ffffff", "#005208"), 
+                   "total_boosters_per_hundred" = c("#ffffff", "#005208"), 
+                   "aged_65_older" = c("#ffffff", "#003752"))
     
+    label <- switch(input$chosen_variable,
+                          "total_cases_per_million" =  "Total Cases Per Million",
+                          "total_deaths_per_million" = "Total Deaths Per Million",
+                          "new_cases_smoothed_per_million" = "New Cases Smoothed Per Million",
+                          "new_deaths_smoothed_per_million" = "New Deaths Smoothed Per Million" ,
+                          "reproduction_rate" = "Reproduction Rate",
+                          "weekly_icu_admissions_per_million" = "Weekly ICU Admissions Per Million",
+                          "weekly_hosp_admissions_per_million" = "Weekly Hosp Admissions Per Millionn",
+                          "people_fully_vaccinated_per_hundred"= "People Fully Vaccinated Per Hundred"  ,
+                          "total_boosters_per_hundred" = "Total Boosters Per Hundred", 
+                          "aged_65_older" = "Aged 65 And Older")
     hcmap(
          input$chosen_continent, 
          data = data_wanted[data_wanted$date == input$date,],
-         name = "Gross national income per capita", 
+         name = label, 
          value = input$chosen_variable,
          borderWidth = 0,
          nullColor = "#d3d3d3",
