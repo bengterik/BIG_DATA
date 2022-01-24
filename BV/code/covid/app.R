@@ -47,7 +47,7 @@ columns_wanted <- c("iso_code", "continent", "location", "date",
                     "new_cases_smoothed_per_million", "new_deaths_smoothed_per_million", 
                     "weekly_icu_admissions_per_million", "weekly_hosp_admissions_per_million",
                     "reproduction_rate", "people_fully_vaccinated_per_hundred", "total_boosters_per_hundred", 
-                    "aged_65_older", "population","population_density")
+                    "aged_65_older")
 
 data_wanted <- data[columns_wanted]
 View(data_wanted)
@@ -57,13 +57,14 @@ countries <- distinct(data["location"])
 dates <- as.Date(data_wanted$date)
 first_day <- min(dates)
 last_day <- max(dates)
-chosen_day <- first_day
+chosen_day <- median(dates)
 
 # A function to create a HighChart plot formatting input to strings
 plot_high_chart <- function(.data,
-                            chart_type = "scatter",
+                            chart_type = 'line',
                             x_value = "Year",             
-                            y_value = "total") {
+                            y_value = "total",
+                            group_value = "service") {
   
   if (is.character(x_value) ) {
     x_value <- ensym(x_value)
@@ -73,9 +74,14 @@ plot_high_chart <- function(.data,
     y_value <- ensym(y_value)
   }
   
+  if (is.character(group_value)) {
+    group_value <- ensym(group_value)
+  }
+  
   .data %>%
     hchart(chart_type, hcaes(x = !!x_value,
-                             y = !!y_value))
+                             y = !!y_value,
+                             group = !!group_value))
 }
 
 # Define UI for application that draws a histogram
@@ -97,7 +103,7 @@ ui <- shinyUI(
                      value = chosen_day))),
          fluidRow(
            column(10,
-                  selectInput("chosen_variable", h3("Desired variable:"),
+                  selectInput("chosen_variable", h3("Chosen variable:"),
                               choices = list("Total Cases Per Million" = "total_cases_per_million" ,
                                              "Total Deaths Per Million" = "total_deaths_per_million" ,
                                              "New Cases Smoothed Per Million" = "new_cases_smoothed_per_million" ,
@@ -111,47 +117,89 @@ ui <- shinyUI(
         fluidRow(
           column(10,
                  selectInput("chosen_continent", h3("Choose the continent:"),
-                             choices = list("Africa" = "custom/africa",
+                             choices = list("The Whole World" = "custom/world-robinson-lowres",
+                                            "Africa" = "custom/africa",
                                             "Asia" = "custom/asia",
                                             "Europe" = "custom/europe",
                                             "North America" = "custom/north-america",
                                             "South America" = "custom/south-america",
-                                            "Oceania" = "custom/oceania",
-                                            "The Whole World" = "custom/world-robinson-lowres")), 
+                                            "Oceania" = "custom/oceania"
+                                            )), 
                  selected = "The Whole World"))),
         mainPanel(
           highchartOutput("myMap") 
           )
       ),
    fluidRow(
-        titlePanel("Scatterplot of Variable/Time"),
+        titlePanel("Single comparison of two countries"),
         
         sidebarPanel(
           fluidRow(
-            column(10,selectInput("chosenvar", h3("Desired variable:"),
-                                  choices = list("total cases per million" = "total_cases_per_million" ,
-                                                 "total deaths per million" = "total_deaths_per_million" ,
-                                                 "reproduction rate" = "reproduction_rate" ,
-                                                 "total boosters per hundred" = "total_boosters_per_hundred" , 
-                                                 "aged 65 older" = "aged_65_older")), selected = "total_deaths_per_million")),
-          fluidRow(
-            column(10,sliderInput("bins",
-                                  "Number of bins:",
-                                  min = 1,
-                                  max = 50,
-                                  value = 5))),
+            column(10,selectInput("chosenvar", h3("Chosen variable"),
+                                  choices = list("Total Cases Per Million" = "total_cases_per_million" ,
+                                                 "Total Deaths Per Million" = "total_deaths_per_million" ,
+                                                 "New Cases Smoothed Per Million" = "new_cases_smoothed_per_million" ,
+                                                 "New Deaths Smoothed Per Million" = "new_deaths_smoothed_per_million" ,
+                                                 "Reproduction Rate" = "reproduction_rate" ,
+                                                 "Weekly ICU Admissions Per Million" = "weekly_icu_admissions_per_million" ,
+                                                 "Weekly Hosp Admissions Per Millionn" = "weekly_hosp_admissions_per_million" ,
+                                                 "People Fully Vaccinated Per Hunderd" = "people_fully_vaccinated_per_hundred" ,
+                                                 "Total Boosters Per Hundred" = "total_boosters_per_hundred")), selected = "New Cases Smoothed Per Million")),
           
           fluidRow(
             column(10,
-                   selectInput("chosencountry", h3("Choose the Country:"),
+                   selectInput("chosencountry_line1", h3("Choose the Country:"),
                                choices = countries), 
-                   selected = "Afghanistan"))),
+                   selected = "Germany")),
+        
+          fluidRow(
+            column(10,
+                   selectInput("chosencountry_line2", h3("Choose the Country:"),
+                               choices = countries), 
+                   selected = "Sweden"))
+          ),
         
         mainPanel(
-          fluidRow(
-            splitLayout(cellWidths = c("50%", "50%"), plotOutput("distPlot"), highchartOutput("scatterPlot"))
-          )
+             highchartOutput("linePlot")
         )
+   ),
+   fluidRow(
+     titlePanel("Compare two variables of one country"),
+     
+     sidebarPanel(
+       fluidRow(
+         column(10,selectInput("xaxis", h3("X-axis:"),
+                               choices = list("Total Cases Per Million" = "total_cases_per_million" ,
+                                              "Total Deaths Per Million" = "total_deaths_per_million" ,
+                                              "New Cases Smoothed Per Million" = "new_cases_smoothed_per_million" ,
+                                              "New Deaths Smoothed Per Million" = "new_deaths_smoothed_per_million" ,
+                                              "Reproduction Rate" = "reproduction_rate" ,
+                                              "Weekly ICU Admissions Per Million" = "weekly_icu_admissions_per_million" ,
+                                              "Weekly Hosp Admissions Per Millionn" = "weekly_hosp_admissions_per_million" ,
+                                              "People Fully Vaccinated Per Hunderd" = "people_fully_vaccinated_per_hundred" ,
+                                              "Total Boosters Per Hundred" = "total_boosters_per_hundred")), selected = "New Cases Smoothed Per Million")),
+       fluidRow(
+         column(10,selectInput("yaxis", h3("Y-axis:"),
+                               choices = list("Total Cases Per Million" = "total_cases_per_million" ,
+                                              "Total Deaths Per Million" = "total_deaths_per_million" ,
+                                              "New Cases Smoothed Per Million" = "new_cases_smoothed_per_million" ,
+                                              "New Deaths Smoothed Per Million" = "new_deaths_smoothed_per_million" ,
+                                              "Reproduction Rate" = "reproduction_rate" ,
+                                              "Weekly ICU Admissions Per Million" = "weekly_icu_admissions_per_million" ,
+                                              "Weekly Hosp Admissions Per Millionn" = "weekly_hosp_admissions_per_million" ,
+                                              "People Fully Vaccinated Per Hunderd" = "people_fully_vaccinated_per_hundred" ,
+                                              "Total Boosters Per Hundred" = "total_boosters_per_hundred")), selected = "Weekly ICU Admissions Per Million")),
+       
+       fluidRow(
+         column(10,
+                selectInput("chosencountry_scatter", h3("Choose the Country:"),
+                            choices = countries), 
+                selected = "Sweden"))
+       ),
+     
+     mainPanel(
+         highchartOutput("scatterPlot")
+     )
    )
   )
 )
@@ -199,28 +247,20 @@ server <- function(input, output) {
         )
     })
     
-    output$distPlot <- renderPlot({
-      # generate bins based on input$bins from ui.R
-      x    <- faithful[, 2]
-      bins <- seq(min(x), max(x), length.out = input$bins + 1)
+    output$linePlot <- renderHighchart({
+      df <- data_wanted[data_wanted$location == input$chosencountry_line1 | data_wanted$location == input$chosencountry_line2,]
       
-      # draw the histogram with the specified number of bins
-      hist(x, breaks = bins, col = 'darkgray', border = 'white')
+      plot_high_chart(df, x_value="date", y_value = input$chosenvar, group = "location") %>%
+        hc_colors(c("#d8b365","#5ab4ac"))
+
     })
     
     
-    
-    
     output$scatterPlot <- renderHighchart({
-      dates_scatter <- as.Date(data_wanted$date[data_wanted$location == input$chosencountry])
-      
-      df <- data_wanted[data_wanted$location == input$chosencountry,]
-      
-      
-      plot_high_chart(df,chart_type = "scatter", x_value="date", y_value = input$chosenvar)
-      
-      
-      
+      df <- data_wanted[data_wanted$location == input$chosencountry_scatter,]
+    
+      plot_high_chart(df,chart_type = "scatter", x_value=input$xaxis, y_value = input$yaxis, group = "location") %>%
+        hc_colors("#4789fc")
     })
 }
 
