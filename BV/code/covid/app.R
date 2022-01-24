@@ -39,8 +39,6 @@ library(mapproj)
 library(leaflet.providers)
 library(dplyr)
 
-
-
 data <- read.csv("deaths_covid.csv")
 View(head(data,10))
 all_columns <- colnames(data, do.NULL = TRUE, prefix = "col")
@@ -52,9 +50,8 @@ columns_wanted <- c("iso_code", "continent", "location", "date",
                     "aged_65_older", "population","population_density")
 
 data_wanted <- data[columns_wanted]
-#data_wanted[is.na(data_wanted)] <- 0
-data_wanted <- mutate_all(data_wanted, ~replace(., is.na(.), 0))
 View(data_wanted)
+countries <- distinct(data["location"])
 
 # get the dates as a column to return the first and last day
 dates <- as.Date(data_wanted$date)
@@ -62,9 +59,24 @@ first_day <- min(dates)
 last_day <- max(dates)
 chosen_day <- first_day
 
-#continents <- dplyr::distinct(data_wanted, continent)[!apply(is.na(dplyr::distinct(data_wanted, continent)) | dplyr::distinct(data_wanted, continent) == "", 1, all),]
-
-
+# A function to create a HighChart plot formatting input to strings
+plot_high_chart <- function(.data,
+                            chart_type = "scatter",
+                            x_value = "Year",             
+                            y_value = "total") {
+  
+  if (is.character(x_value) ) {
+    x_value <- ensym(x_value)
+    
+  }
+  if (is.character(y_value)) {
+    y_value <- ensym(y_value)
+  }
+  
+  .data %>%
+    hchart(chart_type, hcaes(x = !!x_value,
+                             y = !!y_value))
+}
 
 # Define UI for application that draws a histogram
 ui <- shinyUI(
@@ -112,76 +124,104 @@ ui <- shinyUI(
           )
       ),
    fluidRow(
-     sidebarLayout(
-       
-       sidebarPanel(
-         sliderInput(
-           "bins", label = "Number of bins:",
-           min = 1, value = 30, max = 50
-         )
-       ),
-       
-       mainPanel(
-         plotOutput("distPlot")
-       )
-     )
+        titlePanel("Scatterplot of Variable/Time"),
+        
+        sidebarPanel(
+          fluidRow(
+            column(10,selectInput("chosenvar", h3("Desired variable:"),
+                                  choices = list("total cases per million" = "total_cases_per_million" ,
+                                                 "total deaths per million" = "total_deaths_per_million" ,
+                                                 "reproduction rate" = "reproduction_rate" ,
+                                                 "total boosters per hundred" = "total_boosters_per_hundred" , 
+                                                 "aged 65 older" = "aged_65_older")), selected = "total_deaths_per_million")),
+          fluidRow(
+            column(10,sliderInput("bins",
+                                  "Number of bins:",
+                                  min = 1,
+                                  max = 50,
+                                  value = 5))),
+          
+          fluidRow(
+            column(10,
+                   selectInput("chosencountry", h3("Choose the Country:"),
+                               choices = countries), 
+                   selected = "Afghanistan"))),
+        
+        mainPanel(
+          fluidRow(
+            splitLayout(cellWidths = c("50%", "50%"), plotOutput("distPlot"), highchartOutput("scatterPlot"))
+          )
+        )
+   )
   )
-))
+)
 
 # Maps https://code.highcharts.com/mapdata/
 options(highcharter.download_map_data = TRUE)
 
 # Define server logic required to draw a histogram
 server <- function(input, output) {
-  output$myMap <- renderHighchart({
+    output$myMap <- renderHighchart({
+      color_scale <- switch(input$chosen_variable,
+                            "total_cases_per_million" =  c("#ffffff", "#520000"),
+                            "total_deaths_per_million" = c("#ffffff", "#520000"),
+                            "new_cases_smoothed_per_million" =  c("#ffffff", "#520000"),
+                            "new_deaths_smoothed_per_million" =  c("#ffffff", "#520000"),
+                            "weekly_icu_admissions_per_million" =  c("#ffffff", "#520000"),
+                            "weekly_hosp_admissions_per_million" =  c("#ffffff", "#520000"),
+                            "reproduction_rate" = c("#ffffff", "#61004f"),
+                            "people_fully_vaccinated_per_hundred" = c("#ffffff", "#005208"), 
+                            "total_boosters_per_hundred" = c("#ffffff", "#005208"), 
+                            "aged_65_older" = c("#ffffff", "#003752"))
+      label <- switch(input$chosen_variable,
+                      "total_cases_per_million" =  "Total Cases Per Million",
+                      "total_deaths_per_million" = "Total Deaths Per Million",
+                      "new_cases_smoothed_per_million" = "New Cases Smoothed Per Million",
+                      "new_deaths_smoothed_per_million" = "New Deaths Smoothed Per Million" ,
+                      "reproduction_rate" = "Reproduction Rate",
+                      "weekly_icu_admissions_per_million" = "Weekly ICU Admissions Per Million",
+                      "weekly_hosp_admissions_per_million" = "Weekly Hosp Admissions Per Millionn",
+                      "people_fully_vaccinated_per_hundred"= "People Fully Vaccinated Per Hundred"  ,
+                      "total_boosters_per_hundred" = "Total Boosters Per Hundred", 
+                      "aged_65_older" = "Aged 65 And Older")
+      hcmap(
+           input$chosen_continent, 
+           data = data_wanted[data_wanted$date == input$date,],
+           name = label, 
+           value = input$chosen_variable,
+           borderWidth = 0,
+           nullColor = "#d3d3d3",
+           joinBy = c("iso-a3", "iso_code")
+       ) %>%
+        hc_colorAxis(
+          stops = color_stops(n = 10, colors = color_scale),
+          type = "logarithmic"
+        )
+    })
     
-    color_scale <- switch(input$chosen_variable,
-                   "total_cases_per_million" =  c("#ffffff", "#520000"),
-                   "total_deaths_per_million" = c("#ffffff", "#520000"),
-                   "new_cases_smoothed_per_million" =  c("#ffffff", "#520000"),
-                   "new_deaths_smoothed_per_million" =  c("#ffffff", "#520000"),
-                   "weekly_icu_admissions_per_million" =  c("#ffffff", "#520000"),
-                   "weekly_hosp_admissions_per_million" =  c("#ffffff", "#520000"),
-                   "reproduction_rate" = c("#ffffff", "#61004f"),
-                   "people_fully_vaccinated_per_hundred" = c("#ffffff", "#005208"), 
-                   "total_boosters_per_hundred" = c("#ffffff", "#005208"), 
-                   "aged_65_older" = c("#ffffff", "#003752"))
+    output$distPlot <- renderPlot({
+      # generate bins based on input$bins from ui.R
+      x    <- faithful[, 2]
+      bins <- seq(min(x), max(x), length.out = input$bins + 1)
+      
+      # draw the histogram with the specified number of bins
+      hist(x, breaks = bins, col = 'darkgray', border = 'white')
+    })
     
-    label <- switch(input$chosen_variable,
-                          "total_cases_per_million" =  "Total Cases Per Million",
-                          "total_deaths_per_million" = "Total Deaths Per Million",
-                          "new_cases_smoothed_per_million" = "New Cases Smoothed Per Million",
-                          "new_deaths_smoothed_per_million" = "New Deaths Smoothed Per Million" ,
-                          "reproduction_rate" = "Reproduction Rate",
-                          "weekly_icu_admissions_per_million" = "Weekly ICU Admissions Per Million",
-                          "weekly_hosp_admissions_per_million" = "Weekly Hosp Admissions Per Millionn",
-                          "people_fully_vaccinated_per_hundred"= "People Fully Vaccinated Per Hundred"  ,
-                          "total_boosters_per_hundred" = "Total Boosters Per Hundred", 
-                          "aged_65_older" = "Aged 65 And Older")
-    hcmap(
-         input$chosen_continent, 
-         data = data_wanted[data_wanted$date == input$date,],
-         name = label, 
-         value = input$chosen_variable,
-         borderWidth = 0,
-         nullColor = "#d3d3d3",
-         joinBy = c("iso-a3", "iso_code")
-     ) %>%
-      hc_colorAxis(
-        stops = color_stops(n = 10, colors = color_scale),
-        type = "logarithmic"
-      )
-  })
-  
-  output$distPlot <- renderPlot({
-    # generate bins based on input$bins from ui.R
-    x    <- faithful[, 2]
-    bins <- seq(min(x), max(x), length.out = input$bins + 1)
     
-    # draw the histogram with the specified number of bins
-    hist(x, breaks = bins, col = 'darkgray', border = 'white')
-  })
-  
+    
+    
+    output$scatterPlot <- renderHighchart({
+      dates_scatter <- as.Date(data_wanted$date[data_wanted$location == input$chosencountry])
+      
+      df <- data_wanted[data_wanted$location == input$chosencountry,]
+      
+      
+      plot_high_chart(df,chart_type = "scatter", x_value="date", y_value = input$chosenvar)
+      
+      
+      
+    })
 }
 
 #color_stops(colors = viridisLite::inferno(10, begin = 0.1))
