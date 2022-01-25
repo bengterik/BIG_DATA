@@ -8,9 +8,6 @@
 #
 
 
-#install.packages("dplyr")
-
-#source("covid/helpers.R")
 tryCatch(library(shiny),
    error = function(cnd){
      install.packages("shiny")
@@ -242,11 +239,11 @@ server <- function(input, output) {
       df <- data_wanted[data_wanted$location == input$chosencountry_line1 | data_wanted$location == input$chosencountry_line2,]
       
       plot_high_chart(df, x_value="date", y_value = input$chosenvar, group = "location") %>%
-        hc_colors(c("#d8b365","#5ab4ac"))
+        hc_colors(c("#00008B","#EEDD82"))
 
     })
-    
-    
+    #d8b365  ,  5ab4ac
+    #e2c78e
     output$scatterPlot <- renderHighchart({
       df <- data_wanted[data_wanted$location == input$chosencountry_scatter,]
     
