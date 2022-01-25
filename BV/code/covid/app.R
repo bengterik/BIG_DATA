@@ -11,49 +11,50 @@
 #install.packages("dplyr")
 
 #source("covid/helpers.R")
-# tryCatch(
-#   {library(shiny)},
-#   finally = install.packages("shiny")
-# )
-# tryCatch(
-#   {library(maps)},
-#   finally = install.packages("tmap")
-# )
-# tryCatch(
-#   {library(mapproj)},
-#   finally = install.packages("mapproj")
-# )
-# tryCatch(
-#   {library(rworldmap)},
-#   finally = install.packages("rworldmap")
-# )
-source("helpers.R")
-library(highcharter)
-library(ggplot2)
-library(magrittr)
-library(leaflet)
-library(shiny)
-library(jsonlite)
-library(maps)
-library(mapproj)
-library(leaflet.providers)
-library(dplyr)
+tryCatch(library(shiny),
+   error = function(cnd){
+     install.packages("shiny")
+   }
+)
+tryCatch(library(highcharter),
+  error = function(cnd){
+    install.packages("highcharter")
+  }
+)
+tryCatch(library(ggplot2),
+  error = function(cnd){
+    install.packages("ggplot2")
+  }
+)
+tryCatch(library(magrittr),
+  error = function(cnd){
+    install.packages("magrittr")
+  }
+)
+tryCatch(library(dplyr),
+  error = function(cnd){
+    install.packages("dplyr")
+  }
+)
 
-data <- read.csv("deaths_covid.csv")
-View(head(data,10))
+
+data <- read.csv("covid-data.csv")
+
 all_columns <- colnames(data, do.NULL = TRUE, prefix = "col")
+
 columns_wanted <- c("iso_code", "continent", "location", "date",
                     "total_cases_per_million","total_deaths_per_million",
                     "new_cases_smoothed_per_million", "new_deaths_smoothed_per_million", 
-                    "weekly_icu_admissions_per_million", "weekly_hosp_admissions_per_million",
                     "reproduction_rate", "people_fully_vaccinated_per_hundred", "total_boosters_per_hundred", 
                     "aged_65_older")
 
 data_wanted <- data[columns_wanted]
+
+# Replace the NA values with 0
+data_wanted <- mutate_all(data_wanted, ~replace(., is.na(.), 0))
 View(data_wanted)
 countries <- distinct(data["location"])
-
-# get the dates as a column to return the first and last day
+# Get the dates as a column to return the first and last day
 dates <- as.Date(data_wanted$date)
 first_day <- min(dates)
 last_day <- max(dates)
@@ -109,8 +110,6 @@ ui <- shinyUI(
                                              "New Cases Smoothed Per Million" = "new_cases_smoothed_per_million" ,
                                              "New Deaths Smoothed Per Million" = "new_deaths_smoothed_per_million" ,
                                              "Reproduction Rate" = "reproduction_rate" ,
-                                             "Weekly ICU Admissions Per Million" = "weekly_icu_admissions_per_million" ,
-                                             "Weekly Hosp Admissions Per Millionn" = "weekly_hosp_admissions_per_million" ,
                                              "People Fully Vaccinated Per Hunderd" = "people_fully_vaccinated_per_hundred" ,
                                              "Total Boosters Per Hundred" = "total_boosters_per_hundred" , 
                                              "Aged 65 And Older" = "aged_65_older")), selected = "New Cases Smoothed Per Million")),
@@ -130,9 +129,9 @@ ui <- shinyUI(
           highchartOutput("myMap") 
           )
       ),
+   
+   titlePanel("Single comparison of two countries"),
    fluidRow(
-        titlePanel("Single comparison of two countries"),
-        
         sidebarPanel(
           fluidRow(
             column(10,selectInput("chosenvar", h3("Chosen variable"),
@@ -141,20 +140,18 @@ ui <- shinyUI(
                                                  "New Cases Smoothed Per Million" = "new_cases_smoothed_per_million" ,
                                                  "New Deaths Smoothed Per Million" = "new_deaths_smoothed_per_million" ,
                                                  "Reproduction Rate" = "reproduction_rate" ,
-                                                 "Weekly ICU Admissions Per Million" = "weekly_icu_admissions_per_million" ,
-                                                 "Weekly Hosp Admissions Per Millionn" = "weekly_hosp_admissions_per_million" ,
                                                  "People Fully Vaccinated Per Hunderd" = "people_fully_vaccinated_per_hundred" ,
                                                  "Total Boosters Per Hundred" = "total_boosters_per_hundred")), selected = "New Cases Smoothed Per Million")),
           
           fluidRow(
             column(10,
-                   selectInput("chosencountry_line1", h3("Choose the Country:"),
+                   selectInput("chosencountry_line1", h3("Choose the country:"),
                                choices = countries), 
                    selected = "Germany")),
         
           fluidRow(
             column(10,
-                   selectInput("chosencountry_line2", h3("Choose the Country:"),
+                   selectInput("chosencountry_line2", h3("Choose the country:"),
                                choices = countries), 
                    selected = "Sweden"))
           ),
@@ -163,9 +160,9 @@ ui <- shinyUI(
              highchartOutput("linePlot")
         )
    ),
+   
+   titlePanel("Compare two variables of one country"),
    fluidRow(
-     titlePanel("Compare two variables of one country"),
-     
      sidebarPanel(
        fluidRow(
          column(10,selectInput("xaxis", h3("X-axis:"),
@@ -174,8 +171,6 @@ ui <- shinyUI(
                                               "New Cases Smoothed Per Million" = "new_cases_smoothed_per_million" ,
                                               "New Deaths Smoothed Per Million" = "new_deaths_smoothed_per_million" ,
                                               "Reproduction Rate" = "reproduction_rate" ,
-                                              "Weekly ICU Admissions Per Million" = "weekly_icu_admissions_per_million" ,
-                                              "Weekly Hosp Admissions Per Millionn" = "weekly_hosp_admissions_per_million" ,
                                               "People Fully Vaccinated Per Hunderd" = "people_fully_vaccinated_per_hundred" ,
                                               "Total Boosters Per Hundred" = "total_boosters_per_hundred")), selected = "New Cases Smoothed Per Million")),
        fluidRow(
@@ -185,14 +180,12 @@ ui <- shinyUI(
                                               "New Cases Smoothed Per Million" = "new_cases_smoothed_per_million" ,
                                               "New Deaths Smoothed Per Million" = "new_deaths_smoothed_per_million" ,
                                               "Reproduction Rate" = "reproduction_rate" ,
-                                              "Weekly ICU Admissions Per Million" = "weekly_icu_admissions_per_million" ,
-                                              "Weekly Hosp Admissions Per Millionn" = "weekly_hosp_admissions_per_million" ,
                                               "People Fully Vaccinated Per Hunderd" = "people_fully_vaccinated_per_hundred" ,
                                               "Total Boosters Per Hundred" = "total_boosters_per_hundred")), selected = "Weekly ICU Admissions Per Million")),
        
        fluidRow(
          column(10,
-                selectInput("chosencountry_scatter", h3("Choose the Country:"),
+                selectInput("chosencountry_scatter", h3("Choose the country:"),
                             choices = countries), 
                 selected = "Sweden"))
        ),
@@ -215,26 +208,37 @@ server <- function(input, output) {
                             "total_deaths_per_million" = c("#ffffff", "#520000"),
                             "new_cases_smoothed_per_million" =  c("#ffffff", "#520000"),
                             "new_deaths_smoothed_per_million" =  c("#ffffff", "#520000"),
-                            "weekly_icu_admissions_per_million" =  c("#ffffff", "#520000"),
-                            "weekly_hosp_admissions_per_million" =  c("#ffffff", "#520000"),
                             "reproduction_rate" = c("#ffffff", "#61004f"),
                             "people_fully_vaccinated_per_hundred" = c("#ffffff", "#005208"), 
                             "total_boosters_per_hundred" = c("#ffffff", "#005208"), 
                             "aged_65_older" = c("#ffffff", "#003752"))
+      
       label <- switch(input$chosen_variable,
                       "total_cases_per_million" =  "Total Cases Per Million",
                       "total_deaths_per_million" = "Total Deaths Per Million",
                       "new_cases_smoothed_per_million" = "New Cases Smoothed Per Million",
                       "new_deaths_smoothed_per_million" = "New Deaths Smoothed Per Million" ,
                       "reproduction_rate" = "Reproduction Rate",
-                      "weekly_icu_admissions_per_million" = "Weekly ICU Admissions Per Million",
-                      "weekly_hosp_admissions_per_million" = "Weekly Hosp Admissions Per Millionn",
                       "people_fully_vaccinated_per_hundred"= "People Fully Vaccinated Per Hundred"  ,
                       "total_boosters_per_hundred" = "Total Boosters Per Hundred", 
                       "aged_65_older" = "Aged 65 And Older")
-      hcmap(
-           input$chosen_continent, 
-           data = data_wanted[data_wanted$date == input$date,],
+      
+      continent <- switch(input$chosen_continent, 
+                        "custom/world-robinson-lowres" = "The Whole World",
+                        "custom/africa" = "Africa" ,
+                        "custom/asia" =  "Asia",
+                        "custom/europe" = "Europe",
+                        "custom/north-america" ="North America"  ,
+                        "custom/south-america" = "South America" ,
+                        "custom/oceania" = "Oceania")
+      
+      if(continent != "The Whole World"){
+        data_chosen = data_wanted[data_wanted$date == input$date& data_wanted$continent == continent,]
+      }else{
+        data_chosen = data_wanted[data_wanted$date == input$date,]
+      }
+      hcmap(map = input$chosen_continent,
+           data = data_chosen,
            name = label, 
            value = input$chosen_variable,
            borderWidth = 0,
@@ -264,7 +268,6 @@ server <- function(input, output) {
     })
 }
 
-#color_stops(colors = viridisLite::inferno(10, begin = 0.1))
 # Run the application 
 shinyApp(ui = ui, server = server)
 
