@@ -21,16 +21,6 @@ tryCatch(library(highcharter),
     install.packages("highcharter")
   }
 )
-tryCatch(library(ggplot2),
-  error = function(cnd){
-    install.packages("ggplot2")
-  }
-)
-tryCatch(library(magrittr),
-  error = function(cnd){
-    install.packages("magrittr")
-  }
-)
 tryCatch(library(dplyr),
   error = function(cnd){
     install.packages("dplyr")
@@ -39,20 +29,20 @@ tryCatch(library(dplyr),
 
 
 data <- read.csv("covid-data.csv")
-View(head(data,10))
+
 all_columns <- colnames(data, do.NULL = TRUE, prefix = "col")
-print(all_columns)
+
 columns_wanted <- c("iso_code", "continent", "location", "date",
                     "total_cases_per_million","total_deaths_per_million",
                     "new_cases_smoothed_per_million", "new_deaths_smoothed_per_million", 
                     "reproduction_rate", 
                     "people_fully_vaccinated_per_hundred", "total_boosters_per_hundred")
-print(columns_wanted)
+
 data_wanted <- data[columns_wanted]
 
 # Replace the NA values with 0
 data_wanted <- mutate_all(data_wanted, ~replace(., is.na(.), 0))
-View(data_wanted)
+#View(data_wanted)
 countries <- distinct(data["location"])
 # Get the dates as a column to return the first and last day
 dates <- as.Date(data_wanted$date)
