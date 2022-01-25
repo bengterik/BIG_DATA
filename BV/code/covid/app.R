@@ -39,15 +39,15 @@ tryCatch(library(dplyr),
 
 
 data <- read.csv("covid-data.csv")
-
+View(head(data,10))
 all_columns <- colnames(data, do.NULL = TRUE, prefix = "col")
-
+print(all_columns)
 columns_wanted <- c("iso_code", "continent", "location", "date",
                     "total_cases_per_million","total_deaths_per_million",
                     "new_cases_smoothed_per_million", "new_deaths_smoothed_per_million", 
-                    "reproduction_rate", "people_fully_vaccinated_per_hundred", "total_boosters_per_hundred", 
-                    "aged_65_older")
-
+                    "reproduction_rate", 
+                    "people_fully_vaccinated_per_hundred", "total_boosters_per_hundred")
+print(columns_wanted)
 data_wanted <- data[columns_wanted]
 
 # Replace the NA values with 0
@@ -111,8 +111,7 @@ ui <- shinyUI(
                                              "New Deaths Smoothed Per Million" = "new_deaths_smoothed_per_million" ,
                                              "Reproduction Rate" = "reproduction_rate" ,
                                              "People Fully Vaccinated Per Hunderd" = "people_fully_vaccinated_per_hundred" ,
-                                             "Total Boosters Per Hundred" = "total_boosters_per_hundred" , 
-                                             "Aged 65 And Older" = "aged_65_older")), selected = "New Cases Smoothed Per Million")),
+                                             "Total Boosters Per Hundred" = "total_boosters_per_hundred")), selected = "New Cases Smoothed Per Million")),
         fluidRow(
           column(10,
                  selectInput("chosen_continent", h3("Choose the continent:"),
@@ -210,8 +209,7 @@ server <- function(input, output) {
                             "new_deaths_smoothed_per_million" =  c("#ffffff", "#520000"),
                             "reproduction_rate" = c("#ffffff", "#61004f"),
                             "people_fully_vaccinated_per_hundred" = c("#ffffff", "#005208"), 
-                            "total_boosters_per_hundred" = c("#ffffff", "#005208"), 
-                            "aged_65_older" = c("#ffffff", "#003752"))
+                            "total_boosters_per_hundred" = c("#ffffff", "#005208"))
       
       label <- switch(input$chosen_variable,
                       "total_cases_per_million" =  "Total Cases Per Million",
@@ -220,8 +218,7 @@ server <- function(input, output) {
                       "new_deaths_smoothed_per_million" = "New Deaths Smoothed Per Million" ,
                       "reproduction_rate" = "Reproduction Rate",
                       "people_fully_vaccinated_per_hundred"= "People Fully Vaccinated Per Hundred"  ,
-                      "total_boosters_per_hundred" = "Total Boosters Per Hundred", 
-                      "aged_65_older" = "Aged 65 And Older")
+                      "total_boosters_per_hundred" = "Total Boosters Per Hundred")
       
       continent <- switch(input$chosen_continent, 
                         "custom/world-robinson-lowres" = "The Whole World",
