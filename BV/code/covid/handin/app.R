@@ -25,7 +25,7 @@ tryCatch(library(dplyr),
 )
 
 
-data <- read.csv("deaths_covid.csv")
+data <- read.csv("covid_data.csv")
 
 all_columns <- colnames(data, do.NULL = TRUE, prefix = "col")
 

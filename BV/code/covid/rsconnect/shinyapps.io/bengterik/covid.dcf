@@ -1,0 +1,13 @@
+name: covid
+title: covid
+username:
+account: bengterik
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 5512049
+bundleId: 5508284
+url: https://bengterik.shinyapps.io/covid/
+when: 1643153511.15142
+lastSyncTime: 1643153511.15142
+asMultiple: FALSE
+asStatic: FALSE
